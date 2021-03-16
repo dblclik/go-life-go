@@ -1,5 +1,7 @@
 package main
 
+import "sync"
+
 /*
 These rules, which compare the behavior of the automaton to real life,
 can be condensed into the following:
@@ -10,74 +12,33 @@ can be condensed into the following:
 */
 
 // Evolve iterates the matrix forward by 1 step
-// func Evolve(x int, y int, matIn [][]int, matOut [][]int, wg *sync.WaitGroup) {
-// 	// Start with an active count of 0
-// 	defer wg.Done()
+func Evolve(x int, y int, matIn [][]int, matOut [][]int, wg *sync.WaitGroup) {
+	// Start with an active count of 0
+	defer wg.Done()
 
-// 	activeCells := 0
-// 	yMax := len(matIn)
-// 	xMax := len(matIn[0])
+	activeCells := 0
+	yMax := len(matIn)
+	xMax := len(matIn[0])
 
-// 	// Need to iterate over 3x3 region centered at (x,y) and sum
+	neighborhood := [][]int{
+		{-1, -1}, {-1, 0}, {-1, 1},
+		{0, -1}, {0, 1},
+		{1, -1}, {1, 0}, {1, 1},
+	}
 
-// 	if y-1 >= 0 {
-// 		if x-1 >= 0 {
-// 			activeCells += matIn[y-1][x-1]
-// 		}
+	for _, cells := range neighborhood {
+		xIndex := (x + cells[1] + xMax) % xMax
+		yIndex := (y + cells[0] + yMax) % yMax
+		activeCells += matIn[yIndex][xIndex]
+	}
 
-// 		// UC for free (No need to check x bound here)
-// 		activeCells += matIn[y-1][x]
-
-// 		if x+1 < xMax {
-// 			activeCells += matIn[y-1][x+1]
-// 		}
-// 	}
-
-// 	if x-1 >= 0 {
-// 		activeCells += matIn[y][x-1]
-// 	}
-
-// 	if x+1 < xMax {
-// 		activeCells += matIn[y][x+1]
-// 	}
-
-// 	if y+1 < yMax {
-// 		if x-1 >= 0 {
-// 			activeCells += matIn[y+1][x-1]
-// 		}
-
-// 		// LC for free (No need to check x bound here)
-// 		activeCells += matIn[y+1][x]
-
-// 		if x+1 < xMax {
-// 			activeCells += matIn[y+1][x+1]
-// 		}
-// 	}
-
-// 	if activeCells > 3 || activeCells < 2 {
-// 		matOut[y][x] = 0
-// 	} else {
-// 		if activeCells == 3 {
-// 			matOut[y][x] = 1
-// 		} else {
-// 			matOut[y][x] = matIn[y][x]
-// 		}
-// 	}
-// }
-
-// // MinMax is a one-pass min and max finder for slices
-// func MinMax(arr []int) (int, int) {
-// 	min := arr[0]
-// 	max := arr[0]
-
-// 	for _, val := range arr {
-// 		if val < min {
-// 			min = val
-// 		}
-// 		if val > max {
-// 			max = val
-// 		}
-// 	}
-
-// 	return min, max
-// }
+	if activeCells > 3 || activeCells < 2 {
+		matOut[y][x] = 0
+	} else {
+		if activeCells == 3 {
+			matOut[y][x] = 1
+		} else {
+			matOut[y][x] = 1 * matIn[y][x]
+		}
+	}
+}

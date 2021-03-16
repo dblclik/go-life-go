@@ -11,7 +11,7 @@ import (
 )
 
 func main() {
-	const iterations int = 50
+	const iterations int = 1500
 
 	currentState := [][]int{}
 	height := 10 + rand.Intn(30)
@@ -20,7 +20,7 @@ func main() {
 	for i := 0; i < height; i++ {
 		row := []int{}
 		for j := 0; j < width; j++ {
-			if rand.Float32() < 0.5 {
+			if rand.Float32() < 0.25 {
 				row = append(row, 0)
 			} else {
 				row = append(row, 1)
@@ -36,6 +36,10 @@ func main() {
 
 	var wg sync.WaitGroup
 
+	totalTime := 0
+	totalIterations := 0
+	startTime := time.Now()
+
 	for iter := 0; iter < iterations; iter++ {
 		duplicate := make([][]int, len(currentState))
 		for i := range currentState {
@@ -45,18 +49,49 @@ func main() {
 		for j := 0; j < height; j++ {
 			for k := 0; k < width; k++ {
 				wg.Add(1)
-				go Evolve(k, j, currentState, duplicate, &wg)
+				Evolve(k, j, currentState, duplicate, &wg)
 			}
 		}
 
+		totalTime += int(time.Now().Sub(startTime).Milliseconds())
+		startTime = time.Now()
+		totalIterations++
+
+		if MatsEqual(currentState, duplicate) {
+			fmt.Println()
+			fmt.Println("Have reached a terminal state...")
+			fmt.Println()
+			break
+		}
 		currentState = duplicate
 		duplicate = nil
 		PrintMatrix(currentState)
 		fmt.Println()
+		fmt.Println("Current Evolution: ", iter)
+		fmt.Println("Number of active workers: ", runtime.NumGoroutine())
 		time.Sleep(50 * time.Millisecond)
 		CallClear()
 	}
 	wg.Wait()
+	fmt.Println("Ran", totalIterations, "iterations in", totalTime, "milliseconds (CPU time)...")
+}
+
+// MatsEqual takes in two 2D slices and compares for equality
+func MatsEqual(a, b [][]int) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for aIndex, row := range a {
+		if len(row) != len(b[aIndex]) {
+			return false
+		}
+		for rowIndex, val := range row {
+			if val != b[aIndex][rowIndex] {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 var clear map[string]func() //create a map for storing clear funcs
@@ -89,61 +124,5 @@ func CallClear() {
 func PrintMatrix(matrix [][]int) {
 	for _, row := range matrix {
 		fmt.Println(row)
-	}
-}
-
-// Evolve iterates the matrix forward by 1 step
-func Evolve(x int, y int, matIn [][]int, matOut [][]int, wg *sync.WaitGroup) {
-	// Start with an active count of 0
-	defer wg.Done()
-
-	activeCells := 0
-	yMax := len(matIn)
-	xMax := len(matIn[0])
-
-	// Need to iterate over 3x3 region centered at (x,y) and sum
-
-	if y-1 >= 0 {
-		if x-1 >= 0 {
-			activeCells += matIn[y-1][x-1]
-		}
-
-		// UC for free (No need to check x bound here)
-		activeCells += matIn[y-1][x]
-
-		if x+1 < xMax {
-			activeCells += matIn[y-1][x+1]
-		}
-	}
-
-	if x-1 >= 0 {
-		activeCells += matIn[y][x-1]
-	}
-
-	if x+1 < xMax {
-		activeCells += matIn[y][x+1]
-	}
-
-	if y+1 < yMax {
-		if x-1 >= 0 {
-			activeCells += matIn[y+1][x-1]
-		}
-
-		// LC for free (No need to check x bound here)
-		activeCells += matIn[y+1][x]
-
-		if x+1 < xMax {
-			activeCells += matIn[y+1][x+1]
-		}
-	}
-
-	if activeCells > 3 || activeCells < 2 {
-		matOut[y][x] = 0
-	} else {
-		if activeCells == 3 {
-			matOut[y][x] = 1
-		} else {
-			matOut[y][x] = 1 * matIn[y][x]
-		}
 	}
 }
