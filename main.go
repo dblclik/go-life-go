@@ -20,7 +20,7 @@ func main() {
 	for i := 0; i < height; i++ {
 		row := []int{}
 		for j := 0; j < width; j++ {
-			if rand.Float32() < 0.25 {
+			if rand.Float32() < 0.45 {
 				row = append(row, 0)
 			} else {
 				row = append(row, 1)
@@ -49,7 +49,7 @@ func main() {
 		for j := 0; j < height; j++ {
 			for k := 0; k < width; k++ {
 				wg.Add(1)
-				Evolve(k, j, currentState, duplicate, &wg)
+				go Evolve(k, j, currentState, duplicate, &wg)
 			}
 		}
 
